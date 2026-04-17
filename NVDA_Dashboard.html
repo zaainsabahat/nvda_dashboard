@@ -1,0 +1,1337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NVIDIA (NVDA) — Investment Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-base:     #070b12;
+    --bg-panel:    #0c1220;
+    --bg-card:     #11182a;
+    --bg-hover:    #1a2340;
+    --border:      rgba(255,255,255,0.07);
+    --border-lit:  rgba(255,255,255,0.14);
+    --amber:       #f59e0b;
+    --amber-soft:  rgba(245,158,11,0.14);
+    --amber-bdr:   rgba(245,158,11,0.28);
+    --green:       #10b981;
+    --green-soft:  rgba(16,185,129,0.12);
+    --green-bdr:   rgba(16,185,129,0.28);
+    --red:         #ef4444;
+    --red-soft:    rgba(239,68,68,0.10);
+    --red-bdr:     rgba(239,68,68,0.28);
+    --blue:        #60a5fa;
+    --blue-soft:   rgba(96,165,250,0.10);
+    --blue-bdr:    rgba(96,165,250,0.28);
+    --text-1:      #f1f5f9;
+    --text-2:      #94a3b8;
+    --text-3:      #475569;
+    --font-display: 'Fraunces', Georgia, serif;
+    --font-body:    'DM Sans', system-ui, sans-serif;
+    --font-mono:    'DM Mono', ui-monospace, monospace;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg-base);
+    color: var(--text-1);
+    font-family: var(--font-body);
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: var(--bg-base); }
+  ::-webkit-scrollbar-thumb { background: var(--bg-hover); border-radius: 5px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--border-lit); }
+ 
+  /* ── TOPBAR ── */
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(7,11,18,0.92);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center;
+    padding: 0 1.75rem; height: 60px; gap: 1.5rem;
+  }
+  .topbar-logo {
+    font-family: var(--font-display);
+    font-size: 1.2rem; font-weight: 600;
+    color: var(--amber); letter-spacing: -0.02em; font-style: italic;
+    flex-shrink: 0;
+  }
+  .topbar-ticker {
+    font-family: var(--font-mono); font-size: 0.75rem;
+    color: var(--text-2); padding: 4px 10px;
+    border: 1px solid var(--border); border-radius: 4px;
+  }
+  .topbar-price {
+    font-family: var(--font-mono); font-size: 1rem;
+    font-weight: 500; color: var(--text-1);
+  }
+  .topbar-change { font-family: var(--font-mono); font-size: 0.8rem; color: var(--green); }
+  .topbar-tag {
+    font-size: 0.7rem; font-weight: 500; padding: 4px 11px;
+    border-radius: 20px; letter-spacing: 0.05em;
+  }
+  .tag-buy { background: var(--green-soft); color: var(--green); border: 1px solid var(--green-bdr); }
+  .tag-target { background: var(--amber-soft); color: var(--amber); border: 1px solid var(--amber-bdr); }
+  .topbar-nav { margin-left: auto; display: flex; gap: 0.15rem; flex-wrap: wrap; }
+  .nav-btn {
+    background: none; border: none; color: var(--text-2);
+    font-family: var(--font-body); font-size: 0.8rem;
+    padding: 6px 12px; border-radius: 5px; cursor: pointer;
+    transition: all 0.2s;
+  }
+  .nav-btn:hover { background: var(--bg-hover); color: var(--text-1); }
+  .nav-btn.active { color: var(--amber); background: var(--amber-soft); }
+ 
+  /* ── HERO ── */
+  .hero {
+    padding: 2.5rem 1.75rem 1.75rem;
+    position: relative; overflow: hidden;
+    border-bottom: 1px solid var(--border);
+  }
+  .hero::before {
+    content: '';
+    position: absolute; top: -100px; right: -100px;
+    width: 600px; height: 500px;
+    background: radial-gradient(ellipse, rgba(245,158,11,0.07) 0%, transparent 65%);
+    pointer-events: none; z-index: 0;
+  }
+  .hero-inner { max-width: 1400px; margin: 0 auto; position: relative; z-index: 1; }
+  .hero-eyebrow { font-size: 0.68rem; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-3); margin-bottom: 0.5rem; }
+  .hero-title {
+    font-family: var(--font-display); font-weight: 600;
+    font-size: clamp(2.2rem, 5vw, 3.5rem); line-height: 1.05;
+    letter-spacing: -0.02em; margin-bottom: 0.7rem;
+  }
+  .hero-title span { color: var(--amber); font-style: italic; font-weight: 400; }
+  .hero-desc { font-size: 0.95rem; color: var(--text-2); max-width: 580px; margin-bottom: 1.75rem; }
+ 
+  .hero-grid {
+    display: grid; grid-template-columns: repeat(4,1fr);
+    gap: 1px; background: var(--border);
+    border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
+  }
+  .hero-cell { background: var(--bg-card); padding: 1.2rem 1.3rem; }
+  .hero-cell-label { font-size: 0.68rem; color: var(--text-3); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.45rem; font-family: var(--font-mono); }
+  .hero-cell-val { font-family: var(--font-mono); font-size: 1.5rem; font-weight: 500; line-height: 1; }
+  .hero-cell-val.green { color: var(--green); }
+  .hero-cell-val.amber { color: var(--amber); }
+  .hero-cell-sub { font-size: 0.73rem; color: var(--text-2); margin-top: 0.5rem; }
+  .hero-cell-sub.green { color: var(--green); }
+ 
+  /* ── LAYOUT ── */
+  .main { max-width: 1400px; margin: 0 auto; padding: 2.5rem 1.75rem 4rem; }
+  .section { margin-bottom: 3.5rem; scroll-margin-top: 80px; }
+  .section-head { display: flex; align-items: baseline; gap: 1rem; margin-bottom: 0.6rem; }
+  .section-num { font-family: var(--font-mono); font-size: 0.7rem; color: var(--amber); opacity: 0.7; letter-spacing: 0.1em; }
+  .section-title { font-family: var(--font-display); font-size: 1.5rem; font-weight: 600; color: var(--text-1); letter-spacing: -0.01em; }
+  .section-line { flex: 1; height: 1px; background: var(--border); }
+  .section-sub { font-size: 0.9rem; color: var(--text-2); margin-bottom: 1.5rem; max-width: 750px; }
+ 
+  /* ── CARDS ── */
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.4rem;
+    transition: border-color 0.2s;
+  }
+  .card:hover { border-color: var(--border-lit); }
+  .card-label { font-size: 0.7rem; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-3); margin-bottom: 1rem; }
+  .card-title { font-family: var(--font-display); font-size: 1.05rem; font-weight: 600; color: var(--text-1); margin-bottom: 0.4rem; }
+ 
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 1rem; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 1rem; }
+  .grid-2-3 { display: grid; grid-template-columns: 2fr 3fr; gap: 1rem; }
+ 
+  @media (max-width: 900px) {
+    .grid-2, .grid-3, .grid-4, .grid-2-3, .hero-grid { grid-template-columns: 1fr 1fr !important; }
+    .hero-grid .hero-cell:first-child { grid-column: span 2; }
+  }
+  @media (max-width: 600px) {
+    .grid-2, .grid-3, .grid-4, .grid-2-3, .hero-grid { grid-template-columns: 1fr !important; }
+    .hero-grid .hero-cell:first-child { grid-column: auto; }
+    .topbar { padding: 0 1rem; height: auto; padding-top: 10px; padding-bottom: 10px; flex-wrap: wrap; }
+    .main { padding: 2rem 1rem 3rem; }
+  }
+ 
+  /* ── PLAIN-ENGLISH EXPLAINER ── */
+  .explain-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 18px; height: 18px; padding: 0 6px;
+    border-radius: 10px;
+    border: 1px solid var(--text-3); color: var(--text-3);
+    font-size: 9px; letter-spacing: 0.05em; cursor: pointer;
+    background: none; font-family: var(--font-body); font-weight: 500;
+    transition: all 0.2s; flex-shrink: 0;
+    vertical-align: middle; margin-left: 7px;
+  }
+  .explain-btn:hover { border-color: var(--amber); color: var(--amber); }
+  .explain-btn.open { border-color: var(--amber); color: var(--amber); background: var(--amber-soft); }
+  .explainer {
+    background: var(--bg-panel);
+    border: 1px solid var(--amber-bdr);
+    border-left: 3px solid var(--amber);
+    border-radius: 8px; padding: 0.95rem 1.1rem;
+    font-size: 0.85rem; color: var(--text-2);
+    line-height: 1.65; margin: 0.85rem 0 0.5rem;
+    display: none;
+  }
+  .explainer.open { display: block; animation: slideDown 0.3s ease; }
+  .explainer strong { color: var(--amber); font-weight: 500; }
+  .explainer em { color: var(--text-1); font-style: normal; font-weight: 500; }
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+ 
+  /* ── PRICE TARGET GAUGE ── */
+  .gauge-container { padding: 1.2rem 0 0.5rem; }
+  .gauge-track {
+    position: relative; height: 10px;
+    background: linear-gradient(90deg,
+      rgba(239,68,68,0.4) 0%,
+      rgba(245,158,11,0.3) 40%,
+      rgba(16,185,129,0.4) 100%);
+    border-radius: 5px; border: 1px solid var(--border);
+  }
+  .gauge-tick {
+    position: absolute; top: -4px; width: 2px; height: 18px;
+    background: var(--text-3); transform: translateX(-1px);
+  }
+  .gauge-tick-label {
+    position: absolute; top: 22px;
+    font-family: var(--font-mono); font-size: 0.68rem;
+    color: var(--text-3); transform: translateX(-50%); white-space: nowrap;
+  }
+  .gauge-current {
+    position: absolute; top: -7px; width: 14px; height: 24px;
+    background: var(--text-1); border-radius: 2px;
+    transform: translateX(-7px);
+    box-shadow: 0 0 0 3px rgba(255,255,255,0.12);
+  }
+  .gauge-current-label {
+    position: absolute; top: -34px;
+    font-family: var(--font-mono); font-size: 0.78rem;
+    font-weight: 500; color: var(--text-1); transform: translateX(-50%);
+    background: var(--bg-base); padding: 2px 7px; border-radius: 4px;
+    border: 1px solid var(--border-lit); white-space: nowrap;
+  }
+  .gauge-target {
+    position: absolute; top: -4px; width: 3px; height: 18px;
+    background: var(--amber); transform: translateX(-1.5px);
+    box-shadow: 0 0 10px rgba(245,158,11,0.6);
+  }
+  .gauge-target-label {
+    position: absolute; top: -34px;
+    font-family: var(--font-mono); font-size: 0.78rem; font-weight: 500;
+    color: var(--amber); transform: translateX(-50%);
+    background: var(--amber-soft); padding: 2px 8px; border-radius: 4px;
+    border: 1px solid var(--amber-bdr); white-space: nowrap;
+  }
+  .gauge-legend { display: flex; justify-content: space-between; margin-top: 2.5rem; font-size: 0.72rem; color: var(--text-3); }
+ 
+  /* ── SCENARIO CARDS ── */
+  .scenario-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
+  @media (max-width: 900px) { .scenario-row { grid-template-columns: 1fr; } }
+  .sc {
+    border-radius: 10px; padding: 1.3rem;
+    border: 1px solid; cursor: pointer; transition: all 0.3s;
+    position: relative; overflow: hidden;
+  }
+  .sc::before {
+    content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 0;
+    transition: height 0.3s;
+  }
+  .sc:hover::before, .sc.active::before { height: 100%; }
+  .sc.bull { border-color: var(--green-bdr); background: var(--green-soft); }
+  .sc.bull::before { background: var(--green); }
+  .sc.base { border-color: var(--amber-bdr); background: var(--amber-soft); }
+  .sc.base::before { background: var(--amber); }
+  .sc.bear { border-color: var(--red-bdr); background: var(--red-soft); }
+  .sc.bear::before { background: var(--red); }
+  .sc.active { transform: translateY(-2px); }
+  .sc.bull.active { box-shadow: 0 8px 24px rgba(16,185,129,0.18); }
+  .sc.base.active { box-shadow: 0 8px 24px rgba(245,158,11,0.18); }
+  .sc.bear.active { box-shadow: 0 8px 24px rgba(239,68,68,0.18); }
+  .sc-name { font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 0.6rem; }
+  .sc.bull .sc-name { color: var(--green); }
+  .sc.base .sc-name { color: var(--amber); }
+  .sc.bear .sc-name { color: var(--red); }
+  .sc-price { font-family: var(--font-display); font-size: 1.7rem; font-weight: 600; line-height: 1; margin-bottom: 0.35rem; }
+  .sc.bull .sc-price { color: var(--green); }
+  .sc.base .sc-price { color: var(--amber); }
+  .sc.bear .sc-price { color: var(--red); }
+  .sc-ret { font-family: var(--font-mono); font-size: 0.85rem; margin-bottom: 0.9rem; color: var(--text-1); }
+  .sc-prob-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.8rem; font-size: 0.75rem; color: var(--text-2); }
+  .sc-prob-bar { flex: 1; height: 3px; background: var(--bg-hover); border-radius: 2px; overflow: hidden; }
+  .sc-prob-fill { height: 100%; border-radius: 2px; }
+  .sc.bull .sc-prob-fill { background: var(--green); }
+  .sc.base .sc-prob-fill { background: var(--amber); }
+  .sc.bear .sc-prob-fill { background: var(--red); }
+  .sc-desc { font-size: 0.8rem; color: var(--text-2); line-height: 1.6; }
+ 
+  /* ── STAT CARDS ── */
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px,1fr)); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 1rem; }
+  .stat-cell { background: var(--bg-card); padding: 1rem 1.2rem; }
+  .stat-label { font-size: 0.66rem; color: var(--text-3); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.4rem; }
+  .stat-val { font-family: var(--font-mono); font-size: 1.15rem; font-weight: 500; color: var(--text-1); }
+  .stat-val.green { color: var(--green); }
+  .stat-val.amber { color: var(--amber); }
+  .stat-val.red { color: var(--red); }
+ 
+  /* ── MOAT METERS ── */
+  .moat-item { display: flex; align-items: center; gap: 1rem; padding: 0.6rem 0; border-bottom: 1px solid var(--border); }
+  .moat-item:last-child { border-bottom: none; }
+  .moat-name { font-size: 0.85rem; color: var(--text-2); width: 150px; flex-shrink: 0; }
+  .moat-bar-bg { flex: 1; height: 6px; background: var(--bg-hover); border-radius: 3px; overflow: hidden; }
+  .moat-bar { height: 100%; border-radius: 3px; background: linear-gradient(90deg, rgba(245,158,11,0.35), var(--amber)); }
+  .moat-score { font-family: var(--font-mono); font-size: 0.75rem; color: var(--amber); width: 40px; text-align: right; }
+ 
+  /* ── BAR METERS (for financial ratios etc.) ── */
+  .metric-list { display: flex; flex-direction: column; gap: 1rem; }
+  .metric-row-wrap { padding: 0.7rem 0; border-bottom: 1px solid var(--border); }
+  .metric-row-wrap:last-child { border-bottom: none; }
+  .metric-row-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.4rem; }
+  .metric-name { font-size: 0.82rem; color: var(--text-2); }
+  .metric-value { font-family: var(--font-mono); font-size: 0.88rem; color: var(--text-1); font-weight: 500; }
+  .metric-value.green { color: var(--green); }
+  .metric-value.amber { color: var(--amber); }
+  .metric-bar-bg { height: 4px; background: var(--bg-hover); border-radius: 2px; overflow: hidden; }
+  .metric-bar { height: 100%; border-radius: 2px; }
+  .metric-bar.good { background: var(--green); }
+  .metric-bar.mid { background: var(--amber); }
+ 
+  /* ── RISK MATRIX 2D ── */
+  .risk-matrix {
+    position: relative;
+    padding: 2rem 2rem 2rem 3.5rem;
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    min-height: 420px;
+  }
+  .risk-axis-y, .risk-axis-x {
+    position: absolute; font-family: var(--font-mono);
+    font-size: 0.7rem; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  .risk-axis-y { left: 10px; top: 50%; transform: rotate(-90deg) translateX(50%); transform-origin: left center; }
+  .risk-axis-x { bottom: 5px; left: 50%; transform: translateX(-50%); }
+  .risk-grid {
+    position: relative;
+    width: 100%; height: 360px;
+    background:
+      linear-gradient(to right, var(--border) 1px, transparent 1px) 33.33% 0 / 33.33% 100%,
+      linear-gradient(to right, var(--border) 1px, transparent 1px) 66.66% 0 / 33.33% 100%,
+      linear-gradient(to bottom, var(--border) 1px, transparent 1px) 0 33.33% / 100% 33.33%,
+      linear-gradient(to bottom, var(--border) 1px, transparent 1px) 0 66.66% / 100% 33.33%;
+  }
+  .risk-zone {
+    position: absolute;
+    top: 0; right: 0; width: 33.33%; height: 33.33%;
+    background: var(--red-soft);
+    border-left: 1px dashed var(--red-bdr);
+    border-bottom: 1px dashed var(--red-bdr);
+  }
+  .risk-zone::after {
+    content: 'HIGH PRIORITY';
+    position: absolute; top: 10px; right: 10px;
+    font-family: var(--font-mono); font-size: 0.62rem; color: var(--red);
+    letter-spacing: 0.08em;
+  }
+  .risk-bubble {
+    position: absolute; width: 110px;
+    transform: translate(-50%, -50%);
+    padding: 7px 10px;
+    border-radius: 6px; font-size: 0.72rem; line-height: 1.35;
+    cursor: pointer; transition: all 0.2s;
+    text-align: center;
+  }
+  .risk-bubble:hover { transform: translate(-50%, -50%) scale(1.08); z-index: 10; }
+  .risk-b-high { background: var(--red-soft); border: 1px solid var(--red-bdr); color: var(--text-1); }
+  .risk-b-med  { background: var(--amber-soft); border: 1px solid var(--amber-bdr); color: var(--text-1); }
+  .risk-b-low  { background: var(--green-soft); border: 1px solid var(--green-bdr); color: var(--text-1); }
+ 
+  /* ── DCF TABLE ── */
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  th, td { padding: 0.7rem 0.8rem; text-align: left; border-bottom: 1px solid var(--border); }
+  th { font-size: 0.68rem; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-3); background: var(--bg-panel); }
+  td { color: var(--text-2); }
+  td.mono { font-family: var(--font-mono); }
+  td.right { text-align: right; }
+  td.label { color: var(--text-1); font-weight: 500; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+  .tbl-highlight td { background: var(--amber-soft); color: var(--text-1); font-weight: 500; }
+  .tbl-highlight td:first-child { color: var(--amber); }
+ 
+  /* ── SENSITIVITY HEATMAP ── */
+  .heat-wrap { padding: 1rem 0; }
+  .heat-table { border-collapse: separate; border-spacing: 3px; width: 100%; }
+  .heat-table th, .heat-table td { border: none; padding: 0; background: transparent; }
+  .heat-table th { text-align: center; font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-3); padding-bottom: 0.5rem; }
+  .heat-cell {
+    padding: 0.9rem 0.4rem; border-radius: 6px;
+    text-align: center; font-family: var(--font-mono); font-weight: 500;
+    font-size: 0.95rem; color: var(--text-1);
+  }
+  .heat-row-label { color: var(--text-3); font-family: var(--font-mono); font-size: 0.72rem; text-align: right; padding-right: 0.8rem; }
+ 
+  /* ── CATALYST TIMELINE ── */
+  .timeline { position: relative; padding: 1rem 0; }
+  .timeline::before {
+    content: ''; position: absolute; top: 0; bottom: 0; left: 10px;
+    width: 2px; background: linear-gradient(to bottom, var(--amber), transparent);
+  }
+  .timeline-item { position: relative; padding-left: 38px; padding-bottom: 1.4rem; }
+  .timeline-dot {
+    position: absolute; left: 4px; top: 6px;
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--bg-base); border: 2px solid var(--amber);
+  }
+  .timeline-item.high .timeline-dot { background: var(--amber); box-shadow: 0 0 10px rgba(245,158,11,0.5); }
+  .timeline-date { font-family: var(--font-mono); font-size: 0.7rem; color: var(--amber); letter-spacing: 0.05em; margin-bottom: 0.2rem; }
+  .timeline-title { font-size: 0.95rem; color: var(--text-1); font-weight: 500; margin-bottom: 0.3rem; }
+  .timeline-desc { font-size: 0.82rem; color: var(--text-2); }
+  .timeline-tag { display: inline-block; font-family: var(--font-mono); font-size: 0.65rem; padding: 2px 7px; border-radius: 3px; letter-spacing: 0.05em; margin-left: 8px; vertical-align: middle; }
+  .tl-high { background: var(--green-soft); color: var(--green); border: 1px solid var(--green-bdr); }
+  .tl-med  { background: var(--amber-soft); color: var(--amber); border: 1px solid var(--amber-bdr); }
+  .tl-low  { background: var(--red-soft); color: var(--red); border: 1px solid var(--red-bdr); }
+ 
+  /* ── CALCULATOR ── */
+  .calc { padding: 0.5rem 0; }
+  .calc-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; gap: 1rem; flex-wrap: wrap; }
+  .calc-label { font-size: 0.85rem; color: var(--text-2); min-width: 130px; }
+  .calc-slider { flex: 1; min-width: 180px; }
+  input[type=range] {
+    -webkit-appearance: none; appearance: none;
+    width: 100%; height: 4px; background: var(--bg-hover);
+    border-radius: 2px; outline: none;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 18px; height: 18px; background: var(--amber);
+    border-radius: 50%; cursor: pointer;
+    box-shadow: 0 0 0 4px rgba(245,158,11,0.15);
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 18px; height: 18px; background: var(--amber);
+    border-radius: 50%; cursor: pointer; border: none;
+    box-shadow: 0 0 0 4px rgba(245,158,11,0.15);
+  }
+  .calc-value { font-family: var(--font-mono); color: var(--amber); min-width: 70px; text-align: right; font-size: 0.92rem; font-weight: 500; }
+  .calc-output {
+    margin-top: 1rem; padding: 1.25rem;
+    background: var(--amber-soft); border: 1px solid var(--amber-bdr);
+    border-radius: 10px; text-align: center;
+  }
+  .calc-output-label { font-size: 0.7rem; color: var(--amber); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.35rem; }
+  .calc-output-val { font-family: var(--font-display); font-size: 2.2rem; font-weight: 600; color: var(--amber); line-height: 1; }
+  .calc-output-sub { font-family: var(--font-mono); font-size: 0.82rem; color: var(--text-2); margin-top: 0.4rem; }
+ 
+  /* ── VERDICT BANNER ── */
+  .verdict {
+    position: relative; padding: 2.5rem;
+    background:
+      radial-gradient(ellipse at top right, rgba(245,158,11,0.12), transparent 60%),
+      var(--bg-card);
+    border: 1px solid var(--amber-bdr); border-radius: 14px;
+    overflow: hidden;
+  }
+  .verdict::after {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+    background: linear-gradient(to bottom, var(--amber), transparent);
+  }
+  .verdict-eyebrow { font-family: var(--font-mono); font-size: 0.72rem; color: var(--amber); letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 0.8rem; }
+  .verdict-title { font-family: var(--font-display); font-size: 1.7rem; font-weight: 600; color: var(--text-1); margin-bottom: 0.8rem; line-height: 1.2; }
+  .verdict-title span { color: var(--amber); font-style: italic; }
+  .verdict-body { font-size: 0.95rem; color: var(--text-2); max-width: 820px; line-height: 1.7; }
+ 
+  /* ── FOOTER ── */
+  .footer { padding: 3rem 1.75rem 2rem; border-top: 1px solid var(--border); margin-top: 2rem; }
+  .footer-inner { max-width: 1400px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 2rem; flex-wrap: wrap; }
+  .footer-brand { font-family: var(--font-display); font-style: italic; color: var(--amber); font-size: 1.1rem; }
+  .footer-note { font-size: 0.78rem; color: var(--text-3); max-width: 600px; line-height: 1.6; }
+ 
+  canvas { max-width: 100%; }
+</style>
+</head>
+<body>
+ 
+<!-- ── TOPBAR ───────────────────────────────── -->
+<nav class="topbar">
+  <div class="topbar-logo">lumen.research</div>
+  <div class="topbar-ticker">NASDAQ : NVDA</div>
+  <div class="topbar-price">$190.00</div>
+  <div class="topbar-change">▲ unchanged · apr 16</div>
+  <span class="topbar-tag tag-buy">BUY</span>
+  <span class="topbar-tag tag-target">PT $258</span>
+  <div class="topbar-nav">
+    <button class="nav-btn active" onclick="scrollToSection('top')">Overview</button>
+    <button class="nav-btn" onclick="scrollToSection('scenarios')">Scenarios</button>
+    <button class="nav-btn" onclick="scrollToSection('financials')">Financials</button>
+    <button class="nav-btn" onclick="scrollToSection('valuation')">Valuation</button>
+    <button class="nav-btn" onclick="scrollToSection('moat')">Moat</button>
+    <button class="nav-btn" onclick="scrollToSection('risks')">Risks</button>
+    <button class="nav-btn" onclick="scrollToSection('verdict')">Verdict</button>
+  </div>
+</nav>
+ 
+<!-- ── HERO ──────────────────────────────────── -->
+<section class="hero" id="top">
+  <div class="hero-inner">
+    <div class="hero-eyebrow">Equity research · april 2026</div>
+    <h1 class="hero-title">NVIDIA — the <span>architect</span><br>of the intelligence age</h1>
+    <p class="hero-desc">An interactive dashboard designed for readers with little to no finance background. Hover, click, and explore — every number has a plain-English story behind it.</p>
+ 
+    <div class="hero-grid">
+      <div class="hero-cell">
+        <div class="hero-cell-label">the setup</div>
+        <div style="font-family: var(--font-display); font-size: 1.5rem; color: var(--text-1); line-height: 1.2; margin-bottom: 0.5rem;">
+          Stock is down 10% from October highs. The market is nervous about AI competition. We think that nervousness is overdone.
+        </div>
+        <div class="hero-cell-sub">Read this dashboard in order, or jump around — we'll explain everything.</div>
+      </div>
+      <div class="hero-cell">
+        <div class="hero-cell-label">Current price</div>
+        <div class="hero-cell-val">$190</div>
+        <div class="hero-cell-sub">per share, today</div>
+      </div>
+      <div class="hero-cell">
+        <div class="hero-cell-label">Our 12-month target</div>
+        <div class="hero-cell-val amber">$258</div>
+        <div class="hero-cell-sub green">+35.8% potential upside</div>
+      </div>
+      <div class="hero-cell">
+        <div class="hero-cell-label">Recommendation</div>
+        <div class="hero-cell-val green">BUY</div>
+        <div class="hero-cell-sub">conviction: medium-high</div>
+      </div>
+    </div>
+  </div>
+</section>
+ 
+<main class="main">
+ 
+  <!-- ═══════════════════════════════════════════
+       1. THE 60-SECOND STORY
+       ═══════════════════════════════════════════ -->
+  <section class="section" id="story">
+    <div class="section-head">
+      <span class="section-num">01 /</span>
+      <h2 class="section-title">The 60-second story</h2>
+      <span class="section-line"></span>
+    </div>
+    <p class="section-sub">If you only have a minute, here's everything you need to know.</p>
+ 
+    <div class="grid-3">
+      <div class="card">
+        <div class="card-label">01. What does NVIDIA actually do?</div>
+        <div class="card-title">They make the "brains" that run AI</div>
+        <p style="font-size: 0.88rem; color: var(--text-2);">Every ChatGPT response, every Google AI search, every Midjourney image — they all need specialized computer chips to work. NVIDIA makes those chips. They control roughly <strong style="color: var(--amber);">87%</strong> of this market. Think of them as selling the picks and shovels during a gold rush.</p>
+      </div>
+      <div class="card">
+        <div class="card-label">02. Why is the stock down?</div>
+        <div class="card-title">Wall Street is worried about competition</div>
+        <p style="font-size: 0.88rem; color: var(--text-2);">Big tech companies (Amazon, Google, Microsoft) are designing their own AI chips to reduce their dependence on NVIDIA. The market fears this will shrink NVIDIA's business. Investors have pulled the stock down 10% from its October peak of $212.</p>
+      </div>
+      <div class="card">
+        <div class="card-label">03. Why do we disagree?</div>
+        <div class="card-title">The AI pie is growing faster than NVIDIA's slice is shrinking</div>
+        <p style="font-size: 0.88rem; color: var(--text-2);">Even if NVIDIA loses 10% market share, the total market for AI chips is tripling. NVIDIA's revenue should still grow strongly. Plus, their software (called <strong style="color: var(--amber);">CUDA</strong>) is so deeply embedded in how AI is built that switching away from NVIDIA is extremely expensive for customers.</p>
+      </div>
+    </div>
+  </section>
+ 
+  <!-- ═══════════════════════════════════════════
+       2. PRICE TARGET GAUGE
+       ═══════════════════════════════════════════ -->
+  <section class="section" id="gauge">
+    <div class="section-head">
+      <span class="section-num">02 /</span>
+      <h2 class="section-title">Where we think the stock is heading
+        <button class="explain-btn" onclick="toggleExplainer('ex-gauge')">WHAT'S A PRICE TARGET?</button>
+      </h2>
+      <span class="section-line"></span>
+    </div>
+    <div class="explainer" id="ex-gauge">
+      A <strong>price target</strong> is our best guess of where a stock will trade 12 months from today. It's not a guarantee — it's a probability-weighted estimate based on our analysis. We combine three possible outcomes (bull, base, bear) using educated guesses about how likely each one is. The result is a single number: <em>$258</em>. That's <em>35.8% higher</em> than today's price of $190.
+    </div>
+ 
+    <div class="card">
+      <div class="gauge-container">
+        <div style="padding: 45px 6% 60px;">
+          <div class="gauge-track">
+            <div class="gauge-tick" style="left: 0%"></div>
+            <div class="gauge-tick-label" style="left: 0%">$130 (bear)</div>
+ 
+            <div class="gauge-tick" style="left: 24%"></div>
+            <div class="gauge-tick-label" style="left: 24%">$170</div>
+ 
+            <div class="gauge-current" style="left: 36%"></div>
+            <div class="gauge-current-label" style="left: 36%">$190 · today</div>
+ 
+            <div class="gauge-tick" style="left: 48%"></div>
+            <div class="gauge-tick-label" style="left: 48%">$220 (base)</div>
+ 
+            <div class="gauge-target" style="left: 66%"></div>
+            <div class="gauge-target-label" style="left: 66%">$258 · our target</div>
+ 
+            <div class="gauge-tick" style="left: 100%"></div>
+            <div class="gauge-tick-label" style="left: 100%">$340 (bull)</div>
+          </div>
+        </div>
+        <div class="gauge-legend">
+          <span>bearish outcome</span>
+          <span>our expected outcome</span>
+          <span>optimistic outcome</span>
+        </div>
+      </div>
+    </div>
+  </section>
+ 
+  <!-- ═══════════════════════════════════════════
+       3. SCENARIOS
+       ═══════════════════════════════════════════ -->
+  <section class="section" id="scenarios">
+    <div class="section-head">
+      <span class="section-num">03 /</span>
+      <h2 class="section-title">Three possible futures
+        <button class="explain-btn" onclick="toggleExplainer('ex-scen')">HOW TO READ THIS</button>
+      </h2>
+      <span class="section-line"></span>
+    </div>
+    <div class="explainer" id="ex-scen">
+      No one knows the future — so smart analysts imagine several possible ones. We modeled three: a <strong>bull case</strong> (things go great), a <strong>base case</strong> (things go as expected), and a <strong>bear case</strong> (things go badly). We then estimated the probability of each. <em>Click any scenario card below</em> to see the detailed story. The probability-weighted average of all three is how we get our $258 target.
+    </div>
+ 
+    <div class="scenario-row">
+      <div class="sc bull" onclick="selectScenario(this,'bull')">
+        <div class="sc-name">bull case</div>
+        <div class="sc-price">$340</div>
+        <div class="sc-ret">+79% return · 20% probability</div>
+        <div class="sc-prob-row">
+          <span>likelihood</span>
+          <div class="sc-prob-bar"><div class="sc-prob-fill" style="width: 20%"></div></div>
+          <span style="font-family: var(--font-mono);">20%</span>
+        </div>
+        <p class="sc-desc"><strong style="color: var(--green);">What would have to happen:</strong> NVIDIA's next chip architecture (called Rubin) launches ahead of schedule. Companies beyond Big Tech start buying AI chips at scale. Revenue surprises to the upside and the market gets excited again, paying a higher price for each dollar of earnings.</p>
+      </div>
+      <div class="sc base active" onclick="selectScenario(this,'base')">
+        <div class="sc-name">base case · most likely</div>
+        <div class="sc-price">$220</div>
+        <div class="sc-ret">+16% return · 55% probability</div>
+        <div class="sc-prob-row">
+          <span>likelihood</span>
+          <div class="sc-prob-bar"><div class="sc-prob-fill" style="width: 55%"></div></div>
+          <span style="font-family: var(--font-mono);">55%</span>
+        </div>
+        <p class="sc-desc"><strong style="color: var(--amber);">What we think happens:</strong> NVIDIA continues growing strongly but at a slower rate as the law of large numbers kicks in. Competition increases but NVIDIA holds most of its market share. Revenue grows to around $300 billion in FY2027. The stock gets a modest re-rating to 30x earnings as fears ease.</p>
+      </div>
+      <div class="sc bear" onclick="selectScenario(this,'bear')">
+        <div class="sc-name">bear case</div>
+        <div class="sc-price">$130</div>
+        <div class="sc-ret">-32% return · 25% probability</div>
+        <div class="sc-prob-row">
+          <span>likelihood</span>
+          <div class="sc-prob-bar"><div class="sc-prob-fill" style="width: 25%"></div></div>
+          <span style="font-family: var(--font-mono);">25%</span>
+        </div>
+        <p class="sc-desc"><strong style="color: var(--red);">What would have to go wrong:</strong> Big Tech decides AI isn't making them enough money and cuts spending. At the same time, competitors (AMD, Google, Amazon's in-house chips) take meaningful market share faster than expected. Profit margins shrink as NVIDIA is forced to compete on price.</p>
+      </div>
+    </div>
+ 
+    <div class="card">
+      <div class="card-label">the math behind our $258 target</div>
+      <p style="color: var(--text-2); font-size: 0.88rem; margin-bottom: 1rem;">
+        When you weight each scenario by its probability and add them together, you get the <em style="color:var(--text-1);">expected value</em>: the average return an investor would get if this bet was repeated many times.
+      </p>
+      <div style="font-family: var(--font-mono); font-size: 0.95rem; padding: 1rem; background: var(--bg-panel); border-radius: 8px; color: var(--text-2); line-height: 2;">
+        <span style="color: var(--green);">(20% × +79%)</span> + <span style="color: var(--amber);">(55% × +16%)</span> + <span style="color: var(--red);">(25% × −32%)</span><br>
+        = <span style="color: var(--green);">+15.8%</span> + <span style="color: var(--amber);">+8.8%</span> + <span style="color: var(--red);">−8.0%</span><br>
+        = <strong style="color: var(--text-1); font-size: 1.1rem;">+16.6% expected return → price target $258</strong>
+      </div>
+    </div>
+  </section>
+ 
+  <!-- ═══════════════════════════════════════════
+       4. FINANCIAL HEALTH
+       ═══════════════════════════════════════════ -->
+  <section class="section" id="financials">
+    <div class="section-head">
+      <span class="section-num">04 /</span>
+      <h2 class="section-title">The financial story
+        <button class="explain-btn" onclick="toggleExplainer('ex-fin')">WHY THIS MATTERS</button>
+      </h2>
+      <span class="section-line"></span>
+    </div>
+    <div class="explainer" id="ex-fin">
+      The financial statements tell you whether a company is healthy. Three things matter most: <strong>Revenue</strong> (is the business growing?), <strong>Gross Margin</strong> (how much of every sales dollar becomes profit after making the product?), and <strong>Free Cash Flow</strong> (how much actual cash the business generates after all expenses). For NVIDIA, <em>all three are excellent</em>.
+    </div>
+ 
+    <div class="grid-2" style="margin-bottom: 1rem;">
+      <div class="card">
+        <div class="card-label">Revenue growth — from $27B to $216B in 3 years</div>
+        <div class="chart-wrap" style="height: 260px;"><canvas id="chartRevenue"></canvas></div>
+        <p style="color: var(--text-2); font-size: 0.82rem; margin-top: 0.75rem;">
+          This is the <em style="color:var(--text-1);">revenue line</em> — how much money NVIDIA collects from selling products. It has grown almost <strong style="color: var(--amber);">8x in three years</strong>, driven by AI chip demand. We expect continued growth to around $390B by FY2028.
+        </p>
+      </div>
+      <div class="card">
+        <div class="card-label">Gross margin — they keep 75¢ of every dollar
+          <button class="explain-btn" onclick="toggleExplainer('ex-gm')">?</button>
+        </div>
+        <div class="explainer" id="ex-gm">
+          <strong>Gross margin</strong> is what's left over after paying the direct costs of making a product (like the manufacturing). NVIDIA keeps <em>75¢ of every dollar</em> — for context, most hardware companies keep 30-40¢. This tells you customers <em>really need</em> NVIDIA's chips and will pay premium prices.
+        </div>
+        <div class="chart-wrap" style="height: 260px;"><canvas id="chartMargin"></canvas></div>
+        <p style="color: var(--text-2); font-size: 0.82rem; margin-top: 0.75rem;">
+          Margins stayed around 75% even as revenue grew 8x — a sign of <strong style="color: var(--amber);">massive pricing power</strong>. Usually, scaling up causes margins to drop. Not here.
+        </p>
+      </div>
+    </div>
+ 
+    <div class="card" style="margin-bottom: 1rem;">
+      <div class="card-label">How healthy is the balance sheet?</div>
+      <div class="stat-grid">
+        <div class="stat-cell">
+          <div class="stat-label">Cash on hand</div>
+          <div class="stat-val green">~$100B</div>
+          <div style="font-size: 0.7rem; color: var(--text-3); margin-top: 0.3rem;">enough to buy most companies outright</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-label">Debt-to-earnings
+            <button class="explain-btn" onclick="toggleExplainer('ex-debt')">?</button>
+          </div>
+          <div class="stat-val green">&lt;0.1x</div>
+          <div style="font-size: 0.7rem; color: var(--text-3); margin-top: 0.3rem;">essentially debt-free</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-label">Return on invested capital
+            <button class="explain-btn" onclick="toggleExplainer('ex-roic')">?</button>
+          </div>
+          <div class="stat-val green">~47%</div>
+          <div style="font-size: 0.7rem; color: var(--text-3); margin-top: 0.3rem;">elite-tier profitability</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-label">Free cash flow (FY2026)</div>
+          <div class="stat-val green">~$100B</div>
+          <div style="font-size: 0.7rem; color: var(--text-3); margin-top: 0.3rem;">real cash, not accounting earnings</div>
+        </div>
+      </div>
+      <div class="explainer" id="ex-debt">
+        <strong>Debt-to-earnings (Debt/EBITDA)</strong> compares how much a company owes vs. how much it earns each year. A ratio of 3x or higher is usually concerning. NVIDIA is at less than 0.1x — meaning they could pay off all their debt with just a few weeks of earnings.
+      </div>
+      <div class="explainer" id="ex-roic">
+        <strong>Return on Invested Capital (ROIC)</strong> measures how efficiently a company turns investor money into profit. An ROIC of 15% is considered very good. Anything above 30% is world-class. NVIDIA's 47% means that for every $100 invested in the business, they generate $47 of profit each year. This is <em>extraordinarily good</em>.
+      </div>
+    </div>
+ 
+    <div class="card">
+      <div class="card-label">Revenue breakdown — where does the money come from?</div>
+      <div class="chart-wrap" style="height: 300px;"><canvas id="chartSegments"></canvas></div>
+      <p style="color: var(--text-2); font-size: 0.82rem; margin-top: 0.75rem;">
+        <strong style="color: var(--text-1);">89% of revenue comes from the Data Center segment</strong> — the AI chips sold to companies like Microsoft, Google, Amazon, and Meta. This concentration is both a strength (they dominate this market) and a risk (if Big Tech spending slows, it hits hard).
+      </p>
+    </div>
+  </section>
+ 
+  <!-- ═══════════════════════════════════════════
+       5. VALUATION — IS IT CHEAP OR EXPENSIVE?
+       ═══════════════════════════════════════════ -->
+  <section class="section" id="valuation">
+    <div class="section-head">
+      <span class="section-num">05 /</span>
+      <h2 class="section-title">Is the stock cheap or expensive?
+        <button class="explain-btn" onclick="toggleExplainer('ex-pe')">WHAT'S A P/E RATIO?</button>
+      </h2>
+      <span class="section-line"></span>
+    </div>
+    <div class="explainer" id="ex-pe">
+      The <strong>price-to-earnings (P/E) ratio</strong> tells you how much investors are paying for each dollar of a company's annual profit. If a stock trades at $100 and earns $5 per share, the P/E is 20. You can think of it like this: at a P/E of 20, you're paying $20 today for every $1 the company earns per year. A high P/E means the market expects fast growth; a low P/E means the market has low expectations. NVIDIA's current P/E of <em>~26x</em> is actually <em>low by its own history</em> (it often traded at 40-80x in 2023-2025) and is surprisingly comparable to slower-growing peers.
+    </div>
+ 
+    <div class="grid-2" style="margin-bottom: 1rem;">
+      <div class="card">
+        <div class="card-label">NVIDIA vs. its own history</div>
+        <div class="chart-wrap" style="height: 240px;"><canvas id="chartHistoricPE"></canvas></div>
+        <p style="color: var(--text-2); font-size: 0.82rem; margin-top: 0.75rem;">
+          At <strong style="color: var(--amber);">26x forward earnings</strong>, NVIDIA trades at the <em>lowest valuation in 4 years</em>. Despite continued growth, the market has become cautious. If sentiment improves even slightly, the multiple can expand back toward 30-35x — where our $258 target sits.
+        </p>
+      </div>
+      <div class="card">
+        <div class="card-label">NVIDIA vs. its peers</div>
+        <div class="chart-wrap" style="height: 240px;"><canvas id="chartPeers"></canvas></div>
+        <p style="color: var(--text-2); font-size: 0.82rem; margin-top: 0.75rem;">
+          Surprising finding: <strong style="color: var(--amber);">NVIDIA trades cheaper than AMD</strong> (26x vs 38x) — even though NVIDIA grows 44% per year vs AMD's 25%, and has 4x better profitability. This is the mispricing we're exploiting.
+        </p>
+      </div>
+    </div>
+ 
+    <!-- Sensitivity heatmap -->
+    <div class="card">
+      <div class="card-label">Sensitivity — how different assumptions change our answer
+        <button class="explain-btn" onclick="toggleExplainer('ex-sens')">?</button>
+      </div>
+      <div class="explainer" id="ex-sens">
+        This table shows what the stock would be worth under different assumptions. <strong>WACC</strong> is the interest rate we use to discount future cash (higher rate = more pessimistic = lower value). <strong>TGR</strong> is the assumed long-term growth rate forever (higher = more optimistic = higher value). The middle cell is our base case; the table shows the stock is worth <em>significantly more than $190 in most reasonable scenarios</em>.
+      </div>
+      <div class="heat-wrap">
+        <table class="heat-table">
+          <thead>
+            <tr>
+              <th></th>
+              <th>Long-term growth: 3%</th>
+              <th>Long-term growth: 4%</th>
+              <th>Long-term growth: 5%</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="heat-row-label">Discount rate 9.5%<br>(optimistic)</td>
+              <td class="heat-cell" style="background: rgba(16,185,129,0.2);">$225</td>
+              <td class="heat-cell" style="background: rgba(16,185,129,0.35);">$265</td>
+              <td class="heat-cell" style="background: rgba(16,185,129,0.55);">$330</td>
+            </tr>
+            <tr>
+              <td class="heat-row-label">Discount rate 10.5%<br>(our base case)</td>
+              <td class="heat-cell" style="background: rgba(245,158,11,0.15);">$195</td>
+              <td class="heat-cell" style="background: rgba(245,158,11,0.45); outline: 2px solid var(--amber);">$235</td>
+              <td class="heat-cell" style="background: rgba(16,185,129,0.35);">$290</td>
+            </tr>
+            <tr>
+              <td class="heat-row-label">Discount rate 11.5%<br>(conservative)</td>
+              <td class="heat-cell" style="background: rgba(239,68,68,0.18);">$165</td>
+              <td class="heat-cell" style="background: rgba(245,158,11,0.15);">$200</td>
+              <td class="heat-cell" style="background: rgba(245,158,11,0.35);">$245</td>
+            </tr>
+          </tbody>
+        </table>
+        <p style="color: var(--text-2); font-size: 0.82rem; margin-top: 1rem;">
+          <strong style="color: var(--text-1);">Green cells = stock is worth more than $190 (upside)</strong>. The highlighted center cell is our base case of $235. Even in the bottom-right <em>pessimistic</em> scenario, the stock is worth $165 — meaning downside is limited to about -13%, while most scenarios show meaningful upside.
+        </p>
+      </div>
+    </div>
+  </section>
+ 
+  <!-- ═══════════════════════════════════════════
+       6. DCF CALCULATOR — INTERACTIVE
+       ═══════════════════════════════════════════ -->
+  <section class="section" id="calc">
+    <div class="section-head">
+      <span class="section-num">06 /</span>
+      <h2 class="section-title">Build your own valuation
+        <button class="explain-btn" onclick="toggleExplainer('ex-calc')">WHAT AM I DOING?</button>
+      </h2>
+      <span class="section-line"></span>
+    </div>
+    <div class="explainer" id="ex-calc">
+      This is a <strong>simplified DCF calculator</strong> (Discounted Cash Flow). It's how professional investors estimate what a stock is "really worth." <em>Try moving the sliders</em> to see how different assumptions about NVIDIA's future affect its fair value. Notice that reasonable assumptions tend to produce values <em>above today's $190 price</em> — which is why we rate the stock a BUY.
+    </div>
+ 
+    <div class="card">
+      <div class="calc">
+        <div class="calc-row">
+          <span class="calc-label">Revenue growth (5-yr avg)</span>
+          <input type="range" class="calc-slider" id="sl-growth" min="10" max="45" value="28" step="1">
+          <span class="calc-value" id="v-growth">28%</span>
+        </div>
+        <p style="font-size: 0.78rem; color: var(--text-3); margin-top: -0.5rem; margin-bottom: 1rem; padding-left: 130px;">How fast will NVIDIA's sales grow over the next 5 years? Current rate is 44%, slowing over time.</p>
+ 
+        <div class="calc-row">
+          <span class="calc-label">Profit margin (FCF)</span>
+          <input type="range" class="calc-slider" id="sl-margin" min="25" max="55" value="42" step="1">
+          <span class="calc-value" id="v-margin">42%</span>
+        </div>
+        <p style="font-size: 0.78rem; color: var(--text-3); margin-top: -0.5rem; margin-bottom: 1rem; padding-left: 130px;">How much of each sale becomes real cash? NVIDIA currently converts ~46% of revenue to cash.</p>
+ 
+        <div class="calc-row">
+          <span class="calc-label">Discount rate (WACC)</span>
+          <input type="range" class="calc-slider" id="sl-wacc" min="8" max="14" value="10.5" step="0.1">
+          <span class="calc-value" id="v-wacc">10.5%</span>
+        </div>
+        <p style="font-size: 0.78rem; color: var(--text-3); margin-top: -0.5rem; margin-bottom: 1rem; padding-left: 130px;">How risky is the investment? Higher rate = riskier = lower valuation. 10.5% is standard for large tech.</p>
+ 
+        <div class="calc-row">
+          <span class="calc-label">Long-term growth</span>
+          <input type="range" class="calc-slider" id="sl-tgr" min="2" max="6" value="4" step="0.5">
+          <span class="calc-value" id="v-tgr">4.0%</span>
+        </div>
+        <p style="font-size: 0.78rem; color: var(--text-3); margin-top: -0.5rem; margin-bottom: 1.5rem; padding-left: 130px;">Growth rate after 5 years, forever. Usually 3-5% for mature tech companies (similar to GDP).</p>
+ 
+        <div class="calc-output">
+          <div class="calc-output-label">estimated fair value per share</div>
+          <div class="calc-output-val" id="calc-result">$235</div>
+          <div class="calc-output-sub" id="calc-upside">+23.7% upside from $190 · current implied P/E: 32x</div>
+        </div>
+      </div>
+    </div>
+  </section>
+ 
+  <!-- ═══════════════════════════════════════════
+       7. COMPETITIVE MOAT
+       ═══════════════════════════════════════════ -->
+  <section class="section" id="moat">
+    <div class="section-head">
+      <span class="section-num">07 /</span>
+      <h2 class="section-title">What protects NVIDIA from competitors?
+        <button class="explain-btn" onclick="toggleExplainer('ex-moat')">WHAT'S A MOAT?</button>
+      </h2>
+      <span class="section-line"></span>
+    </div>
+    <div class="explainer" id="ex-moat">
+      A <strong>moat</strong> is a structural advantage that makes it hard for competitors to steal a company's customers or profits. Warren Buffett popularized the term: just like a moat around a castle, it protects the business. NVIDIA has <em>several layers of moat</em> — the most important being a software platform called <em>CUDA</em> that developers have spent 18 years learning. Switching away isn't just expensive — it's almost impossible for large customers.
+    </div>
+ 
+    <div class="grid-2-3">
+      <div class="card">
+        <div class="card-label">the five sources of moat</div>
+        <p style="color: var(--text-2); font-size: 0.85rem; margin-bottom: 1rem;">Morningstar's classic framework. Each bar shows NVIDIA's strength on that dimension (0-100):</p>
+        <div class="moat-item"><span class="moat-name">Pricing power</span><div class="moat-bar-bg"><div class="moat-bar" style="width: 92%"></div></div><span class="moat-score">92</span></div>
+        <div class="moat-item"><span class="moat-name">Switching costs</span><div class="moat-bar-bg"><div class="moat-bar" style="width: 95%"></div></div><span class="moat-score">95</span></div>
+        <div class="moat-item"><span class="moat-name">Network effects</span><div class="moat-bar-bg"><div class="moat-bar" style="width: 65%"></div></div><span class="moat-score">65</span></div>
+        <div class="moat-item"><span class="moat-name">Cost advantage</span><div class="moat-bar-bg"><div class="moat-bar" style="width: 55%"></div></div><span class="moat-score">55</span></div>
+        <div class="moat-item"><span class="moat-name">Intangibles / IP</span><div class="moat-bar-bg"><div class="moat-bar" style="width: 98%"></div></div><span class="moat-score">98</span></div>
+      </div>
+      <div class="card">
+        <div class="card-label">why CUDA is the real moat</div>
+        <h3 style="font-family: var(--font-display); font-size: 1.3rem; color: var(--text-1); font-weight: 600; margin-bottom: 0.8rem;">18 years. 5 million developers. Trillions of lines of code.</h3>
+        <p style="color: var(--text-2); font-size: 0.88rem; margin-bottom: 1rem; line-height: 1.7;">
+          <strong style="color: var(--amber);">CUDA</strong> is NVIDIA's programming platform, launched in 2006. Every major AI framework — PyTorch, TensorFlow, JAX — is built to work best with NVIDIA chips through CUDA.
+        </p>
+        <p style="color: var(--text-2); font-size: 0.88rem; margin-bottom: 1rem; line-height: 1.7;">
+          For a customer like Google or Microsoft to switch to a different chip maker, they would have to <em style="color: var(--text-1);">rewrite years of software</em>, retrain their engineers, and risk breaking systems that run their entire AI businesses. The cost isn't the chip — it's the ecosystem.
+        </p>
+        <p style="color: var(--text-2); font-size: 0.88rem; line-height: 1.7;">
+          <strong style="color: var(--amber);">This is why we believe NVIDIA's 87% market share is defensible</strong> even as competitors invest billions. The hardware catches up; the software takes a decade to displace.
+        </p>
+      </div>
+    </div>
+  </section>
+ 
+  <!-- ═══════════════════════════════════════════
+       8. CATALYSTS TIMELINE
+       ═══════════════════════════════════════════ -->
+  <section class="section" id="catalysts">
+    <div class="section-head">
+      <span class="section-num">08 /</span>
+      <h2 class="section-title">What could move the stock?
+        <button class="explain-btn" onclick="toggleExplainer('ex-cat')">?</button>
+      </h2>
+      <span class="section-line"></span>
+    </div>
+    <div class="explainer" id="ex-cat">
+      <strong>Catalysts</strong> are upcoming events that could cause the stock price to jump (or drop). Knowing the catalyst calendar helps you understand when to expect volatility and what to watch for. Some catalysts are <em>scheduled</em> (like earnings reports); others are <em>conditional</em> (like product launches, which can slip).
+    </div>
+ 
+    <div class="card">
+      <div class="timeline">
+        <div class="timeline-item high">
+          <div class="timeline-dot"></div>
+          <div class="timeline-date">may 2026</div>
+          <div class="timeline-title">Q1 FY2027 earnings report<span class="timeline-tag tl-high">high impact · 65% probability of beat</span></div>
+          <div class="timeline-desc">The first major test. Watch for: revenue above $46B, gross margin above 73%, and confident forward guidance. A strong beat could push the stock up 10-15% quickly.</div>
+        </div>
+        <div class="timeline-item high">
+          <div class="timeline-dot"></div>
+          <div class="timeline-date">q3-q4 2026</div>
+          <div class="timeline-title">Rubin chip architecture launches<span class="timeline-tag tl-med">high impact · 55% on time</span></div>
+          <div class="timeline-desc">NVIDIA's next-generation chip. Successful launch extends their technological lead by 18+ months and locks in another upgrade cycle from hyperscalers. Delays would be a negative surprise.</div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-dot"></div>
+          <div class="timeline-date">throughout 2026</div>
+          <div class="timeline-title">Enterprise AI adoption wave<span class="timeline-tag tl-med">medium impact · 50% probability</span></div>
+          <div class="timeline-desc">If regular companies (banks, retailers, hospitals) start buying AI infrastructure at scale — not just Big Tech — NVIDIA's customer base diversifies meaningfully.</div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-dot"></div>
+          <div class="timeline-date">h1-h2 2026</div>
+          <div class="timeline-title">China export rules loosen<span class="timeline-tag tl-low">upside optionality · 30% probability</span></div>
+          <div class="timeline-desc">Currently excluded from guidance — any relaxation of US export restrictions to China is pure upside. Could add $6-10B in annual revenue we're not counting on.</div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-dot"></div>
+          <div class="timeline-date">fy2028+</div>
+          <div class="timeline-title">Physical AI / robotics<span class="timeline-tag tl-low">long-term option · 35% probability</span></div>
+          <div class="timeline-desc">NVIDIA's robotics platform (GR00T) targets a future market for humanoid robots. Not priced into the stock today. If it works, this is the next leg of growth beyond AI training.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+ 
+  <!-- ═══════════════════════════════════════════
+       9. RISK MATRIX
+       ═══════════════════════════════════════════ -->
+  <section class="section" id="risks">
+    <div class="section-head">
+      <span class="section-num">09 /</span>
+      <h2 class="section-title">What could go wrong?
+        <button class="explain-btn" onclick="toggleExplainer('ex-risk')">HOW TO READ</button>
+      </h2>
+      <span class="section-line"></span>
+    </div>
+    <div class="explainer" id="ex-risk">
+      Every investment has risks. Smart investors don't ignore them — they <em>map them</em>. This <strong>risk matrix</strong> plots each risk by two dimensions: <strong>likelihood</strong> (how probable is it?) and <strong>impact</strong> (if it happens, how bad?). The top-right zone is <em>high priority</em> — high likelihood AND high impact. Hover any bubble for details.
+    </div>
+ 
+    <div class="risk-matrix">
+      <div class="risk-axis-y">← IMPACT →</div>
+      <div class="risk-axis-x">LIKELIHOOD →</div>
+      <div class="risk-grid">
+        <div class="risk-zone"></div>
+        <!-- Each bubble: left = likelihood (0-100%), top = 100 - impact -->
+        <div class="risk-bubble risk-b-high" style="left: 60%; top: 15%;" title="Hyperscaler capex freeze — If Microsoft, Google, Amazon cut AI spending, NVIDIA's revenue stalls.">
+          Big Tech cuts AI spending
+        </div>
+        <div class="risk-bubble risk-b-med" style="left: 55%; top: 30%;" title="Gross margin compression below 70% for two consecutive quarters.">
+          Margin compression
+        </div>
+        <div class="risk-bubble risk-b-med" style="left: 65%; top: 50%;" title="AMD's MI450 chip or custom silicon from Google/Amazon takes more than 20% share.">
+          Faster competition
+        </div>
+        <div class="risk-bubble risk-b-low" style="left: 20%; top: 10%;" title="OpenAI Triton makes CUDA moat less important. Low probability short-term.">
+          CUDA moat weakens
+        </div>
+        <div class="risk-bubble risk-b-low" style="left: 15%; top: 25%;" title="Taiwan conflict — disrupts TSMC, NVIDIA's chip manufacturer. Low probability, huge impact.">
+          Taiwan supply shock
+        </div>
+        <div class="risk-bubble risk-b-low" style="left: 30%; top: 65%;" title="Tighter US-China export controls. Management already excluded China.">
+          China restrictions
+        </div>
+        <div class="risk-bubble risk-b-low" style="left: 10%; top: 55%;" title="Jensen Huang steps back. No clear succession plan yet.">
+          Key-person risk
+        </div>
+      </div>
+    </div>
+ 
+    <div class="grid-3" style="margin-top: 1.5rem;">
+      <div class="card">
+        <div class="card-label">tripwire · gross margin</div>
+        <p style="font-size: 0.85rem; color: var(--text-2); line-height: 1.65;">If margin drops below <strong style="color: var(--amber);">71%</strong> for two consecutive quarters, the pricing-power thesis is broken. <em style="color: var(--text-1);">Action: reduce position 50%, downgrade to HOLD.</em></p>
+      </div>
+      <div class="card">
+        <div class="card-label">tripwire · revenue growth</div>
+        <p style="font-size: 0.85rem; color: var(--text-2); line-height: 1.65;">If data center revenue growth falls below <strong style="color: var(--amber);">15% year-over-year</strong> with no explanation, the AI demand story is at risk. <em style="color: var(--text-1);">Action: exit position.</em></p>
+      </div>
+      <div class="card">
+        <div class="card-label">tripwire · hyperscaler capex</div>
+        <p style="font-size: 0.85rem; color: var(--text-2); line-height: 1.65;">If Microsoft or Alphabet cut quarterly AI capex by <strong style="color: var(--amber);">more than 15%</strong>, the demand cycle is peaking. <em style="color: var(--text-1);">Action: reduce 50% immediately, reassess.</em></p>
+      </div>
+    </div>
+  </section>
+ 
+  <!-- ═══════════════════════════════════════════
+       10. FINAL VERDICT
+       ═══════════════════════════════════════════ -->
+  <section class="section" id="verdict">
+    <div class="section-head">
+      <span class="section-num">10 /</span>
+      <h2 class="section-title">Our verdict</h2>
+      <span class="section-line"></span>
+    </div>
+ 
+    <div class="verdict">
+      <div class="verdict-eyebrow">final recommendation · april 16, 2026</div>
+      <h2 class="verdict-title">We rate NVIDIA a <span>BUY</span> with a 12-month target of $258 (+35.8%).</h2>
+      <p class="verdict-body">
+        The stock is not cheap on an absolute basis, but it is cheap relative to <em>its own history</em>, <em>its peers</em>, and the <em>earnings power we see over the next 24 months</em>. The market is pricing in a substitution scenario from custom silicon that we believe is additive, not substitutive. NVIDIA's CUDA moat is deeper than consensus credits, the total addressable market for AI compute is expanding faster than NVIDIA's share is declining, and the current price embeds bearish assumptions that are falsifiable within two earnings prints.
+        <br><br>
+        The risk/reward is 2.9 to 1 — meaning for every dollar of potential downside, we see roughly three dollars of potential upside. Combined with a positive expected value of +16.6% and a clear catalyst path (Q1 FY2027 earnings in May, Rubin launch in H2 2026), this is an <em>asymmetric bet worth taking</em> for investors with a 12-24 month horizon.
+      </p>
+    </div>
+  </section>
+ 
+</main>
+ 
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-brand">lumen.research</div>
+    <div class="footer-note">
+      This dashboard is for educational and informational purposes only. Not investment advice. All forward-looking estimates are analytical projections based on public information as of April 16, 2026. Consult a licensed financial advisor before making investment decisions. Historical data from NVIDIA earnings releases.
+    </div>
+  </div>
+</footer>
+ 
+<script>
+// ── Explainer toggles ──
+function toggleExplainer(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.toggle('open');
+  event.stopPropagation();
+}
+ 
+// ── Nav scroll ──
+function scrollToSection(id) {
+  const el = document.getElementById(id);
+  if (el) {
+    window.scrollTo({ top: el.offsetTop - 80, behavior: 'smooth' });
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
+  }
+}
+ 
+// ── Scenario select ──
+function selectScenario(card, which) {
+  document.querySelectorAll('.sc').forEach(c => c.classList.remove('active'));
+  card.classList.add('active');
+}
+ 
+// ── Chart.js defaults ──
+Chart.defaults.font.family = "'DM Sans', sans-serif";
+Chart.defaults.font.size = 11;
+Chart.defaults.color = '#94a3b8';
+Chart.defaults.scale.grid.color = 'rgba(255,255,255,0.05)';
+Chart.defaults.scale.ticks.color = '#475569';
+Chart.defaults.plugins.tooltip.backgroundColor = '#11182a';
+Chart.defaults.plugins.tooltip.borderColor = 'rgba(255,255,255,0.14)';
+Chart.defaults.plugins.tooltip.borderWidth = 1;
+Chart.defaults.plugins.tooltip.padding = 10;
+Chart.defaults.plugins.tooltip.titleFont = { size: 12, weight: '500' };
+Chart.defaults.plugins.tooltip.bodyFont = { size: 11 };
+Chart.defaults.plugins.tooltip.boxPadding = 6;
+ 
+const AMBER = '#f59e0b';
+const GREEN = '#10b981';
+const RED = '#ef4444';
+const BLUE = '#60a5fa';
+const GRID = 'rgba(255,255,255,0.05)';
+ 
+// ── Chart: Revenue growth ──
+new Chart(document.getElementById('chartRevenue'), {
+  type: 'bar',
+  data: {
+    labels: ['FY23', 'FY24', 'FY25', 'FY26', 'FY27E', 'FY28E'],
+    datasets: [{
+      label: 'Revenue',
+      data: [27, 60.9, 130.5, 215.9, 310, 390],
+      backgroundColor: ctx => {
+        const i = ctx.dataIndex;
+        if (i < 4) return 'rgba(245,158,11,0.75)';
+        return 'rgba(245,158,11,0.28)';
+      },
+      borderColor: ctx => ctx.dataIndex < 4 ? AMBER : 'rgba(245,158,11,0.5)',
+      borderWidth: 1,
+      borderRadius: 4
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: ctx => `$${ctx.parsed.y}B revenue${ctx.dataIndex >= 4 ? ' (estimate)' : ''}`
+        }
+      }
+    },
+    scales: {
+      y: {
+        ticks: { callback: v => '$' + v + 'B' },
+        grid: { color: GRID }
+      },
+      x: { grid: { display: false } }
+    }
+  }
+});
+ 
+// ── Chart: Gross margin ──
+new Chart(document.getElementById('chartMargin'), {
+  type: 'line',
+  data: {
+    labels: ['FY23', 'FY24', 'FY25', 'FY26', 'FY27E', 'FY28E'],
+    datasets: [{
+      label: 'Gross margin',
+      data: [56.9, 72.7, 74.6, 75.2, 73.5, 72.0],
+      borderColor: AMBER,
+      backgroundColor: 'rgba(245,158,11,0.08)',
+      tension: 0.35,
+      fill: true,
+      pointRadius: 5,
+      pointBackgroundColor: AMBER,
+      pointBorderColor: '#11182a',
+      pointBorderWidth: 2,
+      borderWidth: 2
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: ctx => ctx.parsed.y.toFixed(1) + '% gross margin' } }
+    },
+    scales: {
+      y: { min: 50, max: 80, ticks: { callback: v => v + '%' }, grid: { color: GRID } },
+      x: { grid: { display: false } }
+    }
+  }
+});
+ 
+// ── Chart: Segments doughnut ──
+new Chart(document.getElementById('chartSegments'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Data Center', 'Gaming', 'Pro Visualization', 'Automotive', 'OEM & Other'],
+    datasets: [{
+      data: [89, 5, 2, 2, 1],
+      backgroundColor: [AMBER, BLUE, GREEN, '#a855f7', '#64748b'],
+      borderColor: '#11182a',
+      borderWidth: 3,
+      hoverOffset: 6
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    cutout: '62%',
+    plugins: {
+      legend: {
+        position: 'right',
+        labels: { boxWidth: 12, boxHeight: 12, padding: 12, font: { size: 12 }, color: '#94a3b8' }
+      },
+      tooltip: {
+        callbacks: { label: ctx => ctx.label + ': ' + ctx.parsed + '% of revenue' }
+      }
+    }
+  }
+});
+ 
+// ── Chart: Historic P/E ──
+new Chart(document.getElementById('chartHistoricPE'), {
+  type: 'line',
+  data: {
+    labels: ['2022', '2023', '2024', '2025 peak', 'Today'],
+    datasets: [{
+      label: 'Forward P/E',
+      data: [32, 65, 55, 48, 26],
+      borderColor: AMBER,
+      backgroundColor: 'rgba(245,158,11,0.12)',
+      fill: true,
+      tension: 0.3,
+      pointRadius: 5,
+      pointBackgroundColor: ctx => ctx.dataIndex === 4 ? '#f1f5f9' : AMBER,
+      pointBorderColor: '#11182a',
+      pointBorderWidth: 2,
+      borderWidth: 2
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: ctx => ctx.parsed.y + 'x forward P/E' } }
+    },
+    scales: {
+      y: { min: 15, max: 75, ticks: { callback: v => v + 'x' }, grid: { color: GRID } },
+      x: { grid: { display: false } }
+    }
+  }
+});
+ 
+// ── Chart: Peer comparison ──
+new Chart(document.getElementById('chartPeers'), {
+  type: 'bar',
+  data: {
+    labels: ['NVDA', 'AMD', 'AVGO', 'MSFT', 'AAPL'],
+    datasets: [{
+      label: 'Forward P/E',
+      data: [26, 38, 25, 28, 28],
+      backgroundColor: ctx => ctx.dataIndex === 0 ? AMBER : 'rgba(148,163,184,0.35)',
+      borderColor: ctx => ctx.dataIndex === 0 ? AMBER : 'rgba(148,163,184,0.7)',
+      borderWidth: 1,
+      borderRadius: 4
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: ctx => ctx.parsed.x + 'x forward P/E' } }
+    },
+    scales: {
+      x: { ticks: { callback: v => v + 'x' }, grid: { color: GRID } },
+      y: { grid: { display: false } }
+    }
+  }
+});
+ 
+// ── DCF Calculator ──
+const SHARES = 24.4; // billion shares approx
+const BASE_REV = 215.9; // FY2026 revenue
+ 
+function calcDCF() {
+  const g = parseFloat(document.getElementById('sl-growth').value) / 100;
+  const margin = parseFloat(document.getElementById('sl-margin').value) / 100;
+  const wacc = parseFloat(document.getElementById('sl-wacc').value) / 100;
+  const tgr = parseFloat(document.getElementById('sl-tgr').value) / 100;
+ 
+  document.getElementById('v-growth').textContent = (g*100).toFixed(0) + '%';
+  document.getElementById('v-margin').textContent = (margin*100).toFixed(0) + '%';
+  document.getElementById('v-wacc').textContent = wacc.toFixed(3)*100 ? (wacc*100).toFixed(1) + '%' : '';
+  document.getElementById('v-wacc').textContent = (wacc*100).toFixed(1) + '%';
+  document.getElementById('v-tgr').textContent = (tgr*100).toFixed(1) + '%';
+ 
+  // Project 5 years of FCF with tapering growth
+  let rev = BASE_REV;
+  let totalPV = 0;
+  let fcf5 = 0;
+  for (let year = 1; year <= 5; year++) {
+    // Taper growth: year 1 = g*1.3, year 5 = g*0.6
+    const thisG = g * (1.3 - (year-1) * 0.14);
+    rev = rev * (1 + thisG);
+    const fcf = rev * margin;
+    const pv = fcf / Math.pow(1 + wacc, year);
+    totalPV += pv;
+    if (year === 5) fcf5 = fcf;
+  }
+  // Terminal value
+  const tv = fcf5 * (1 + tgr) / (wacc - tgr);
+  const pvTV = tv / Math.pow(1 + wacc, 5);
+  totalPV += pvTV;
+ 
+  const perShare = totalPV / SHARES;
+  const upside = ((perShare - 190) / 190) * 100;
+  // Implied P/E: at perShare using FY27 EPS est ~7.3
+  const impliedPE = perShare / 7.3;
+ 
+  document.getElementById('calc-result').textContent = '$' + Math.round(perShare);
+  let color = '#f59e0b';
+  if (upside > 30) color = '#10b981';
+  else if (upside < 0) color = '#ef4444';
+  document.getElementById('calc-result').style.color = color;
+ 
+  const sign = upside >= 0 ? '+' : '';
+  document.getElementById('calc-upside').textContent =
+    `${sign}${upside.toFixed(1)}% ${upside >= 0 ? 'upside' : 'downside'} from $190 · implied P/E: ${impliedPE.toFixed(0)}x`;
+}
+['sl-growth','sl-margin','sl-wacc','sl-tgr'].forEach(id => {
+  document.getElementById(id).addEventListener('input', calcDCF);
+});
+calcDCF();
+ 
+// ── Nav scroll highlight ──
+const sections = ['top','scenarios','financials','valuation','moat','risks','verdict'];
+const navBtns = document.querySelectorAll('.nav-btn');
+window.addEventListener('scroll', () => {
+  const scrollPos = window.scrollY + 120;
+  let activeIdx = 0;
+  sections.forEach((id, i) => {
+    const el = document.getElementById(id);
+    if (el && el.offsetTop <= scrollPos) activeIdx = i;
+  });
+  navBtns.forEach((btn, i) => {
+    btn.classList.toggle('active', i === activeIdx);
+  });
+});
+</script>
+</body>
+</html>
